@@ -63,6 +63,13 @@ contract GlobalStorage is FoundryCheats, HalmosCheats {
         no_duplicate_calls = _no_duplicate_calls;
     }
 
+    bool private only_allowed_selectors = false;
+
+    function setOnlyAllowedSelectors(bool _only_allowed_selectors) external {
+        _vm.assume(msg.sender == configurer);
+        only_allowed_selectors = _only_allowed_selectors;
+    }
+
     /*
     ** Known SymbolicActors contract
     */
@@ -100,21 +107,30 @@ contract GlobalStorage is FoundryCheats, HalmosCheats {
     /* 
     ** Selectors that are banned to consider during symbolic execution. 
     */ 
-    mapping (uint256 => bytes4) banned_selectors;
-    uint256 banned_selectors_size = 0;
+    mapping (bytes4 => bool) banned_selectors;
 
     function addBannedFunctionSelector(bytes4 selector) external {
         _vm.assume(msg.sender == configurer);
-        banned_selectors[banned_selectors_size] = selector;
-        banned_selectors_size++;
+        banned_selectors[selector] = true;
+        delete allowed_selectors[selector];
+    }
+
+    /*
+    ** Selectors that are allowed to consider during symbolic execution. 
+    */
+    mapping (bytes4 => bool) allowed_selectors;
+
+    function addAllowedFunctionSelector(bytes4 selector) external {
+        _vm.assume(msg.sender == configurer);
+        allowed_selectors[selector] = true;
+        delete banned_selectors[selector];
     }
 
     /*
     ** Selectors that have already been used in symbolic execution.
     ** Only applicable in no_duplicate_calls mode.
     */ 
-    mapping (uint256 => bytes4) used_selectors;
-    uint256 used_selectors_size = 0;
+    mapping (bytes4 => bool) used_selectors;
 
     /*
     ** if addr is a concrete value, this returns (addr, symbolic calldata for addr)
@@ -130,24 +146,20 @@ contract GlobalStorage is FoundryCheats, HalmosCheats {
                                         returns (address ret, bytes memory data) 
     {
         bytes4 selector = _svm.createBytes4("GlobalStorage_selector");
-
-        for (uint256 s = 0; s < banned_selectors_size; s++) {
-            _vm.assume(selector != banned_selectors[s]);
-        }
-
-        if (no_duplicate_calls) {
-            for (uint256 s = 0; s < used_selectors_size; s++) {
-                _vm.assume(selector != used_selectors[s]);
-            }
-            used_selectors[used_selectors_size++] = selector;
-        }
-
         for (uint256 i = 0; i < target_contracts_list_size; i++) {
             if (target_contracts[i] == addr) {
                 string memory name = names_by_addr[target_contracts[i]];
                 ret = target_contracts[i];
                 data = _svm.createCalldata(name);
                 _vm.assume(selector == bytes4(data));
+                _vm.assume(banned_selectors[selector] != true);
+                if (no_duplicate_calls) {
+                    _vm.assume(used_selectors[selector] != true);
+                    used_selectors[selector] = true;
+                }
+                if (only_allowed_selectors) {
+                    _vm.assume(allowed_selectors[selector] == true);
+                }
                 return (ret, data);
             }
         }
