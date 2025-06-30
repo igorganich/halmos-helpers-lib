@@ -39,7 +39,6 @@ contract SymbolicActor is HalmosHelpersTargetsExecutor {
     fallback() external payable {
         // Deny use of this function as delegatecallee to avoid recursion
         assumeNotDelegateCall();
-        incrementFallbackCount();
         // Function selector this fallback was called from
         bytes4 selector = _svm.createBytes4("fallback_selector"); 
         _vm.assume(selector == bytes4(msg.data));
@@ -48,14 +47,16 @@ contract SymbolicActor is HalmosHelpersTargetsExecutor {
             // fallback may execute some set of transactions or revert
             bool is_revert = _svm.createBool("fallback_is_revert");
             if (false == is_revert) {
+                // Avoid recursion
+                incrementFallbackCount();
                 for (uint8 i = 0; i < symbolic_fallback_txs_number; i++) {
                     executeSymbolicallyAllTargets("fallback_target");
                 }
+                decrementFallbackCount();
             } else {
                 revert();
             } 
         }
-        decrementFallbackCount();
         bytes memory retdata = _svm.createBytes(1000, "fallback_retdata");// something should be returned
         assembly {
             return(add(retdata, 0x20), mload(retdata))
@@ -70,19 +71,19 @@ contract SymbolicActor is HalmosHelpersTargetsExecutor {
     receive() external payable {
         // Deny use of this function as delegatecallee to avoid recursion
         assumeNotDelegateCall();
-        incrementReceiveCount();
         bool is_empty = _svm.createBool("receive_is_empty");
         if (!is_empty) {
             // receive may execute some set of transactions or revert
             bool is_revert = _svm.createBool("receive_is_revert");
             if (false == is_revert) {
+                incrementReceiveCount();
                 for (uint8 i = 0; i < symbolic_receive_txs_number; i++) {
                     executeSymbolicallyAllTargets("receive_target");
                 }
+                decrementReceiveCount();
             } else {
                 revert();
             }
         }
-        decrementReceiveCount();
     }
 }

@@ -100,10 +100,26 @@ abstract contract HalmosHelpers is HalmosHelpersTargetsExecutor {
     }
 
     /*
+    ** Allow the function from symbolic test by its selector
+    ** Executing this function removes the selector from the "banned" list
+    */
+    function halmosHelpersAllowFunctionSelector(bytes4 selector) internal {
+        get_GlobalStorage().addAllowedFunctionSelector(selector);
+    }
+
+    /*
     ** Exclude the function from symbolic test by its selector
+    ** Executing this function removes the selector from the "allowed" list
     */
     function halmosHelpersBanFunctionSelector(bytes4 selector) internal {
         get_GlobalStorage().addBannedFunctionSelector(selector);
+    }
+
+    /*
+    ** Disable or enable only-allowed-selectors mode (default is disabled)
+    */
+    function halmosHelpersSetOnlyAllowedSelectors(bool _only_allowed_selectors) internal {
+        get_GlobalStorage().setOnlyAllowedSelectors(_only_allowed_selectors);
     }
 
     /*
