@@ -50,6 +50,15 @@ contract SymbolicActor is HalmosHelpersTargetsExecutor {
                 // Avoid recursion
                 incrementFallbackCount();
                 for (uint8 i = 0; i < symbolic_fallback_txs_number; i++) {
+                    if (get_GlobalStorage().debug_mode()) {
+                        console.log("-------------------------------------------------------------------------------");
+                        console.log("[halmos-helpers debug] executing inside fallback");
+                        console.log("[halmos-helpers debug] symbolic_fallback_txs: ", i);
+                        console.log("[halmos-helpers debug] symbolic_fallback_depth: ", get_GlobalStorage().symbolic_fallback_counter());
+                        console.log("[halmos-helpers debug] this: ", address(this));
+                        console.log("[halmos-helpers debug] msg.sender: ", msg.sender);
+                        console.log("-------------------------------------------------------------------------------");
+                    }
                     executeSymbolicallyAllTargets("fallback_target");
                 }
                 decrementFallbackCount();
@@ -78,6 +87,13 @@ contract SymbolicActor is HalmosHelpersTargetsExecutor {
             if (false == is_revert) {
                 incrementReceiveCount();
                 for (uint8 i = 0; i < symbolic_receive_txs_number; i++) {
+                    if (get_GlobalStorage().debug_mode()) {
+                        console.log("-------------------------------------------------------------------------------");
+                        console.log("[halmos-helpers debug] executing inside receive()");
+                        console.log("[halmos-helpers debug] symbolic_receive_txs: ", i);
+                        console.log("[halmos-helpers debug] symbolic_receive_depth: ", get_GlobalStorage().symbolic_receive_counter());
+                        console.log("-------------------------------------------------------------------------------");
+                    }
                     executeSymbolicallyAllTargets("receive_target");
                 }
                 decrementReceiveCount();

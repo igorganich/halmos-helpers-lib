@@ -61,6 +61,15 @@ abstract contract HalmosHelpersTargetsExecutor is FoundryCheats, HalmosCheats {
         //Get some concrete target-name pair
         (target, data) = get_GlobalStorage().getConcreteAddrAndData(target);
         uint snap0 = _vm.snapshotState();
+        if (get_GlobalStorage().debug_mode()) {
+            console.log("-------------------------------------------------------------------------------");
+            console.log("[halmos-helpers debug] executing symTxToAny: ", target);
+            console.log("[halmos-helpers debug] target name: ", get_GlobalStorage().names_by_addr(target));
+            console.log("[halmos-helpers debug] symbolic transaction identificator: ", identificator);
+            console.log("[halmos-helpers debug] msg.sender: ", msg.sender);
+            console.logBytes(data);
+            console.log("-------------------------------------------------------------------------------");
+        }
         (bool success, bytes memory res) = target.call{value: ETH_val}(data);
         uint snap1 = _vm.snapshotState();
         _vm.assume(snap0 != snap1);
@@ -75,6 +84,14 @@ abstract contract HalmosHelpersTargetsExecutor is FoundryCheats, HalmosCheats {
         bytes memory data;
         (target, data) = get_GlobalStorage().getConcreteAddrAndData(target);
         uint snap0 = _vm.snapshotState();
+        if (get_GlobalStorage().debug_mode()) {
+            console.log("-------------------------------------------------------------------------------");
+            console.log("[halmos-helpers debug] executing symTxToTarget: ", target);
+            console.log("[halmos-helpers debug] target name: ", get_GlobalStorage().names_by_addr(target));
+            console.log("[halmos-helpers debug] msg.sender: ", msg.sender);
+            console.logBytes(data);
+            console.log("-------------------------------------------------------------------------------");
+        }
         (bool success, bytes memory res) = target.call{value: ETH_val}(data);
         uint snap1 = _vm.snapshotState();
         _vm.assume(snap0 != snap1);

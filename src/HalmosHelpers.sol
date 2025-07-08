@@ -128,4 +128,8 @@ abstract contract HalmosHelpers is HalmosHelpersTargetsExecutor {
     function halmosHelpersSetNoDuplicateCalls(bool _no_duplicate_calls) internal {
         get_GlobalStorage().setNoDuplicateCalls(_no_duplicate_calls);
     }
+
+    function halmosHelpersSetDebugMode(bool _debug_mode) internal {
+        get_GlobalStorage().setDebugMode(_debug_mode);
+    }
 }

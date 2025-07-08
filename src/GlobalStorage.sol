@@ -12,11 +12,16 @@ contract GlobalStorage is FoundryCheats, HalmosCheats {
     address public constant configurer = address(uint160(uint256(keccak256("halmos-helpers-lib configurer address"))));
     address public constant callbacker = address(uint160(uint256(keccak256("halmos-helpers-lib callbacker address"))));
 
+    bool public debug_mode;
+
+    function setDebugMode(bool _debug_mode) external {
+        _vm.assume(msg.sender == configurer);
+        debug_mode = _debug_mode;
+    }
     /*
     ** fallback and receive counter functionality. This controls the number of automatic receive() and fallback() handles.
     ** This number is common to all SymbolicActor instances
     */
-
     uint8 public max_symbolic_fallback;
     uint8 public max_symbolic_receive;
 
@@ -91,7 +96,7 @@ contract GlobalStorage is FoundryCheats, HalmosCheats {
     ** Known target contracts
     */
     mapping (uint256 => address) target_contracts;
-    mapping (address => string) names_by_addr;
+    mapping (address => string) public names_by_addr;
     uint256 target_contracts_list_size = 0;
 
     function addAddrNamePair(address addr, string memory name) external {
