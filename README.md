@@ -1,11 +1,11 @@
 # halmos-helpers-lib
-**halmos-helpers-lib** is a solidity library for quick and convenient preparation of solidity project for symbolic execution stateful checks under the [halmos](https://github.com/a16z/halmos) engine. 
+**halmos-helpers-lib** is a solidity library for quick and convenient preparation of solidity project for symbolic execution stateful checks under the [halmos](https://github.com/a16z/halmos) engine. The main idea of this library is to allow the test developer to create powerful symbolic tests, covering as much work as possible automatically (for example, now you don't need to implement monstrous **handlers** with custom **callback** implementations - this is processed automatically). It contains functionality for automatic processing of **reentrancy**, malicious and fully mocked external contracts, **DoS** scenarios, provides a framework for flexible stateful invariant testing, using many optimizations and much more!
 
 Essentially, it is a collection of contracts that, through some abstractions that symbolic execution allows, provide the ability to describe the check **setup**, **scenarios**, and **invariants** in a fairly abstract way.
 
 Important thing: despite the fact that there is already some powerful functionality, in the real world you can encounter some usage limitations. Therefore, I would like even **RECOMMEND** adapting and patching the code of this library for your specific cases, using the existing functionality as a basis.
 ## Target halmos version
-This library is currently compatible with `halmos 0.2.7`. Many features are not compatible with older halmos versions. I also cannot guarantee that it will work on newer versions of halmos. I will try to keep it compatible with the latest version of halmos. Feel free to make pull requests to both help me keep it fresh and to suggest any changes to the functionality.
+This library is currently compatible with `halmos 0.3.0`. Many features are not compatible with older halmos versions. I also cannot guarantee that it will work on newer versions of halmos. I will try to keep it compatible with the latest version of halmos. Feel free to make pull requests to both help me keep it fresh and to suggest any changes to the functionality.
 ## How to connect this library to your test suite?
 1. Clone this repository (or add it as a submodule to your repository)
 2. Add **halmos-helpers-lib** to your `remappings.txt`:
@@ -124,7 +124,7 @@ vm.startPrank(getConfigurer());
 halmosHelpersInitialize(); // Initialize HalmosHelpers stuff
 vm.stopPrank();
 ```
-If, for example, the test crashes at the target registration stage, you may have forgotten about initialization.
+If the test crashes at the target registration stage, you may have forgotten about initialization.
 ## Target contracts
 Target contracts are contracts whose functions will be called by actors during a stateful symbolic test.
 ### Deployment
@@ -149,12 +149,33 @@ vm.stopPrank();
 By default, during a symbolic test, actors will be able to call **ALL** `external/public` functions of the target contract. If you want to exclude any of the functions, you can use `halmosHelpersBanFunctionSelector()` function. Just pass the selector of the function that needs to be excluded from the symbolic test:
 ```solidity
 vm.startPrank(getConfigurer());
-halmosHelpersBanFunctionSelector(bytes4(keccak256("simulateAndRevert(address,bytes)")));
+halmosHelpersBanFunctionSelector(some_target.some_function.selector);
 vm.stopPrank();
 ```
+This function excludes the selector from the **allowed selectors** list.
+
 See [this](https://github.com/igorganich/halmos-helpers-examples/tree/main/examples/coverage/09_banned_function) example.
+### Use only whitelisted functions
+The opposite of the previous option is the option to include only a limited set of selectors in the symbolic test.
+
+First, let's describe the set of allowed selectors:
+```solidity
+vm.startPrank(getConfigurer());
+halmosHelpersAllowFunctionSelector(some_target1.some_function1.selector);
+halmosHelpersAllowFunctionSelector(some_target2.some_function2.selector);
+...
+vm.stopPrank();
+```
+`halmosHelpersAllowFunctionSelector()` excludes the selector from the **banned selectors** list.
+
+Then we turn on the **onlyAllowedSelectors** mode:
+```solidity
+vm.startPrank(getConfigurer());
+halmosHelpersAllowFunctionSelector(true);
+vm.stopPrank();
+```
 ## SymbolicActor overview
-`SymbolicActor` is a special contract that acts as a system participant and can send transactions to target contracts.
+`SymbolicActor` is a special contract that acts as a system participant and can send transactions to target contracts. 
 
 Question: Why use the contract instead of just `address`?
 
@@ -304,6 +325,7 @@ fallback() external payable {
     ...
 }
 ```
+It's worth noting that any `view` function called to a **SymbolicActor** will simply return a symbolic array of bytes anyway.
 ### Recursive callback handling
 During symbolic execution, there may be paths in which `receive()` and `fallback()` callbacks are called multiple times recursively for the same or multiple different actors. The depth of such calls is regulated by a configuration function `halmosHelpersSetSymbolicCallbacksDepth()`:
 ```solidity
@@ -320,6 +342,18 @@ contract SomeContract is Test, HalmosHelpers {
 }
 ```
 The first parameter is the maximum `fallback()` depth, the second parameter is maximum `receive()` depth. Default values are `1` and `1`.
+### SymbolicActor as a mock external contract
+One of the unusual uses of **SymbolicActor** is to use it as some kind of external contract with an unknown implementation in advance. Imagine that you need to use some universal **mock** that could authomatically return any value from any `view` function, make some set of calls inside of `non-view` functions and process `receive()`. To do this, it is enough to deploy a separate **SymbolicActor** contract and use it as such a **mock**:
+```solidity
+SymbolicActor[] mocks;
+vm.startPrank(getConfigurer());
+mocks = halmosHelpersGetSymbolicActorArray(1);
+...
+// An example of how a symbolic mock can be used for a given target.
+// Obviously, each usage will be different.
+targetContract = new TargetContract(address(mocks[0]));
+```
+See [this](https://github.com/igorganich/halmos-helpers-examples/blob/main/examples/realworld/size-solidity-cantina-audit-reproduce/README.md) realworld example.
 ## General configurations
 ### noDuplicateCalls mode
 There is a possibility to optimize stateful symbolic execution by eliminating the possibility of symbolic call of the same target function twice in the same path. It is based on the fact that in the real world, it is often enough to call each of the buggy functions only once to see the presence of a bug. Therefore, this mode can save us resources. This is relevant for scenarios with multiple symbolic transactions or with callbacks processing.  Just use `halmosHelpersSetNoDuplicateCalls()` during configuration. The only boolean parameter is to enable or disable this mode:
@@ -331,6 +365,13 @@ vm.stopPrank(); // Stop prank
 Default setting is `false`.
 
 See [this](https://github.com/igorganich/halmos-helpers-examples/tree/main/examples/coverage/08_no_duplicate_calls) example.
+### Verbose mode
+To better track the symbolic testing process, a **verbose mode** has been added. Currently, it simply prints information to the **console** about where and which function is currently being called symbolically. This helps somewhat, for example, to catch **bottlenecks** during symbolic execution, but in the future this functionality should be reworked into something more informative.
+```solidity
+vm.startPrank(getConfigurer()); // Start prank on behalf of configurer
+halmosHelpersSetVerboseMode(true);
+vm.stopPrank(); // Stop prank
+```
 ## Symbolic offset error in target bypass
 There is also a somewhat unusual use of the functionality of this library. Consider [this](https://github.com/igorganich/halmos-helpers-examples/tree/main/examples/coverage/10_handle_abstract_call) example:
 ```solidity
@@ -360,7 +401,7 @@ contract HandleAbstractCallTarget_original {
     }
 }
 ```
-The current version of halmos (`0.2.7` at the time of writing) is unable to find a transaction that would make the variable `goal=true` without serious hint.
+The current version of halmos (`0.3.0` at the time of writing) is unable to find a transaction that would make the variable `goal=true` without serious hint.
 
 Any path that tries to call the `goal_function()` function from `entry()` (the only way to succeed) encounters a symbolic offset error:
 ```javascript
@@ -438,10 +479,11 @@ It is also worth noting that we simply start ignoring the data passed to the fun
 
 This is just one of many possible examples of non-obvious uses of this library within target contracts. I'll probably add other examples later.
 
-I expect the halmos development team to fix symbolic offset errors in the future, so I consider this approach as a temporary crutch.
+I expect the halmos development team to fix **symbolic offset errors** in the future, so I consider this approach as a temporary crutch.
 ## Plans for improvement
 1. Functionality to improve `delegatecall` handling
 2. Automatic processing of proxy contracts
 3. Implementing other heuristics for finding bugs
+4. Optimized flashLoans functionality
 ## License
 This code is licensed under [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html).

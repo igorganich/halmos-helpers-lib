@@ -12,9 +12,9 @@ contract GlobalStorage is FoundryCheats, HalmosCheats {
     address public constant configurer = address(uint160(uint256(keccak256("halmos-helpers-lib configurer address"))));
     address public constant callbacker = address(uint160(uint256(keccak256("halmos-helpers-lib callbacker address"))));
 
-    bool public debug_mode;
+    bool public verbose_mode;
 
-    function setDebugMode(bool _debug_mode) external {
+    function setVerboseMode(bool _debug_mode) external {
         _vm.assume(msg.sender == configurer);
         debug_mode = _debug_mode;
     }
