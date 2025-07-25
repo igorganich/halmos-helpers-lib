@@ -24,6 +24,8 @@ contract MyHalmosTestContract is Test, HalmosHelpers {
     ...
 }
 ```
+### soldeer
+This library is also available on [soldeer](https://soldeer.xyz/project/halmos-helpers-lib)
 ## Examples
 There is a [repository](https://github.com/igorganich/halmos-helpers-examples) that contains examples of using this library in practice.
 ## Basic idea
@@ -247,21 +249,21 @@ During the symbolic transaction, we may encounter a scenario where someone sends
 contract SymbolicActor is HalmosHelpersTargetsExecutor {
     ...
     receive() external payable {
-        incrementReceiveCount();
+        ...
         bool is_empty = _svm.createBool("receive_is_empty");
         if (!is_empty) {
             // receive may execute some set of transactions or revert
             bool is_revert = _svm.createBool("receive_is_revert");
             if (false == is_revert) {
+                incrementReceiveCount();
                 for (uint8 i = 0; i < symbolic_receive_txs_number; i++) {
                     executeSymbolicallyAllTargets("receive_target");
                 }
+                decrementReceiveCount();
             } else {
                 revert();
             }
         }
-        decrementReceiveCount();
-    }
     ...
 }
 ```
