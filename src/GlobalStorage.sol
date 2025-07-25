@@ -14,9 +14,9 @@ contract GlobalStorage is FoundryCheats, HalmosCheats {
 
     bool public verbose_mode;
 
-    function setVerboseMode(bool _debug_mode) external {
+    function setVerboseMode(bool _verbose_mode) external {
         _vm.assume(msg.sender == configurer);
-        debug_mode = _debug_mode;
+        verbose_mode = _verbose_mode;
     }
     /*
     ** fallback and receive counter functionality. This controls the number of automatic receive() and fallback() handles.

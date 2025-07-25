@@ -61,12 +61,12 @@ abstract contract HalmosHelpersTargetsExecutor is FoundryCheats, HalmosCheats {
         //Get some concrete target-name pair
         (target, data) = get_GlobalStorage().getConcreteAddrAndData(target);
         uint snap0 = _vm.snapshotState();
-        if (get_GlobalStorage().debug_mode()) {
+        if (get_GlobalStorage().verbose_mode()) {
             console.log("-------------------------------------------------------------------------------");
-            console.log("[halmos-helpers debug] executing symTxToAny: ", target);
-            console.log("[halmos-helpers debug] target name: ", get_GlobalStorage().names_by_addr(target));
-            console.log("[halmos-helpers debug] symbolic transaction identificator: ", identificator);
-            console.log("[halmos-helpers debug] msg.sender: ", msg.sender);
+            console.log("[halmos-helpers verbose] executing symTxToAny: ", target);
+            console.log("[halmos-helpers verbose] target name: ", get_GlobalStorage().names_by_addr(target));
+            console.log("[halmos-helpers verbose] symbolic transaction identificator: ", identificator);
+            console.log("[halmos-helpers verbose] msg.sender: ", msg.sender);
             console.logBytes(data);
             console.log("-------------------------------------------------------------------------------");
         }
@@ -84,11 +84,11 @@ abstract contract HalmosHelpersTargetsExecutor is FoundryCheats, HalmosCheats {
         bytes memory data;
         (target, data) = get_GlobalStorage().getConcreteAddrAndData(target);
         uint snap0 = _vm.snapshotState();
-        if (get_GlobalStorage().debug_mode()) {
+        if (get_GlobalStorage().verbose_mode()) {
             console.log("-------------------------------------------------------------------------------");
-            console.log("[halmos-helpers debug] executing symTxToTarget: ", target);
-            console.log("[halmos-helpers debug] target name: ", get_GlobalStorage().names_by_addr(target));
-            console.log("[halmos-helpers debug] msg.sender: ", msg.sender);
+            console.log("[halmos-helpers verbose] executing symTxToTarget: ", target);
+            console.log("[halmos-helpers verbose] target name: ", get_GlobalStorage().names_by_addr(target));
+            console.log("[halmos-helpers verbose] msg.sender: ", msg.sender);
             console.logBytes(data);
             console.log("-------------------------------------------------------------------------------");
         }
