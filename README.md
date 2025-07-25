@@ -485,5 +485,10 @@ I expect the halmos development team to fix **symbolic offset errors** in the fu
 2. Automatic processing of proxy contracts
 3. Implementing other heuristics for finding bugs
 4. Optimized flashLoans functionality
+5. Optimized multicall handling
+## Public use of halmos-helpers-lib
+This is a partial list of protocols that use **halmos-helpers-lib** in its test suite:
+* [SizeCredit](https://github.com/SizeCredit/size-solidity/tree/main/test/halmos)
+* Someday this list will definitely be bigger :D
 ## License
 This code is licensed under [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html).
